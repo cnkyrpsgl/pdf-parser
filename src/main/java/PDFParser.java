@@ -63,8 +63,12 @@ public class PDFParser {
       FileWriter districtWriter = new FileWriter("district.txt");
       FileWriter taxOfficeWriter = new FileWriter("tax_office.txt");
 
+      cityWriter.write("INSERT INTO city (code, name) VALUES\n");
+      districtWriter.write("INSERT INTO district (city_id, name) VALUES\n");
+      taxOfficeWriter.write("INSERT INTO tax_office(city_id, district_id, name, code) VALUES\n");
+
       Set<String> blacklistLines =
-        Set.of("VERGİ DAİRESİ BAŞKANLIKLARI (*) VE VERGİ DAİRELERİ LİSTESİ", "İL İLÇE", "MUH.BİR", ".", "KODU",
+        Set.of("VERGİ DAİRESİ BAŞKANLIKLARI (*) VE VERGİ DAİRELERİ LİSTESİ" , "İL İLÇE" , "MUH.BİR" , "." , "KODU" ,
                "VERGİ DAİRESİ");
 
       LocalDateTime current = now();
@@ -93,12 +97,9 @@ public class PDFParser {
         String cityName = words.get(2);
         String districtName = words.get(3);
         String taxOfficeCode = words.get(taxOfficeCodeIndex);
-        String taxOfficeName = String.join(" ", words.subList(taxOfficeCodeIndex + 1, words.size()));
+        String taxOfficeName = String.join(" " , words.subList(taxOfficeCodeIndex + 1, words.size()));
         try {
-          String cityQuery = MessageFormat.format("""
-                                                    INSERT INTO city (code, name, created_at, last_updated_at)
-                                                    VALUES (''{0}'', ''{1}'', ''{2}'', ''{3}'');
-                                                    """, cityCode, cityName, current, current);
+          String cityQuery = MessageFormat.format("(''{0}'', ''{1}''),\n" , cityCode, cityName);
           if (!queries.contains(cityQuery)) {
             cityWriter.write(cityQuery);
             queries.add(cityQuery);
@@ -106,11 +107,8 @@ public class PDFParser {
             cityId.getAndSet(cityId.get() + 1);
           }
 
-          String districtQuery = MessageFormat.format("""
-                                                        INSERT INTO district(city_id, name, created_at, last_updated_at)
-                                                        VALUES (''{0}'', ''{1}'', ''{2}'', ''{3}'');
-                                                        """, cityNameIdMap.get(cityName), districtName, current,
-                                                      current);
+          String districtQuery =
+            MessageFormat.format("(''{0}'', ''{1}''),\n" , cityNameIdMap.get(cityName), districtName);
           if (!queries.contains(districtQuery)) {
             districtWriter.write(districtQuery);
             queries.add(districtQuery);
@@ -118,13 +116,10 @@ public class PDFParser {
             districtId.getAndSet(districtId.get() + 1);
           }
 
-          String taxOfficeQuery = MessageFormat.format("""
-                                                         INSERT INTO tax_office(
-                                                         	city_id, district_id, name, code, created_at, last_updated_at)
-                                                         	VALUES (''{0}'', ''{1}'', ''{2}'', ''{3}'', ''{4}'', ''{5}'');
-                                                         """, cityNameIdMap.get(cityName),
-                                                       districtNameIdMap.get(districtName), taxOfficeName,
-                                                       taxOfficeCode, current, current);
+          String taxOfficeQuery =
+            MessageFormat.format("(''{0}'', ''{1}'', ''{2}'', ''{3}''),\n" , cityNameIdMap.get(cityName),
+                                 districtNameIdMap.get(districtName), taxOfficeName,
+                                 taxOfficeCode);
           if (!queries.contains(taxOfficeQuery)) {
             taxOfficeWriter.write(taxOfficeQuery);
             queries.add(taxOfficeQuery);
